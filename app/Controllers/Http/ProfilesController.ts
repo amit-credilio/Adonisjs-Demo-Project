@@ -40,9 +40,14 @@ export default class ProfilesController {
         try {
             const user = await auth.use('api').user
             
-            const data = await Database.query().select('name', 'email', 'dob', 'gender').from('users').leftJoin('profiles', 'users.id', 'profiles.user_id').where('users.id', user.id).first();
-            
-            return data;
+            const data = await User.query().where('id', user.id).preload('profile').first();
+
+            return {
+                'email': data?.email,
+                'name': data?.profile?.name,
+                'gender': data?.profile?.gender,
+                'dob': data?.profile?.dob
+            }
 
         } catch (error) {
             response.status(500).send({
@@ -80,12 +85,10 @@ export default class ProfilesController {
     public async destroy({request, response}) {
         try {
             // check user input
-            console.log(request);
             const mobile = request.input('mobile');
             if(!mobile) {
                 throw new Error("mobile number is required to delete profile");                
             }
-            console.log(mobile);
             
             // Check profile exists or not
             const profile = await Profile.findBy('mobile', mobile);
